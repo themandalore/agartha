@@ -20,22 +20,34 @@ contract SebuMaster {
     mapping(uint256 => address) slotToToken;
     mapping(uint256 => uint256) slotToRanking;
     mapping(uint256 => uint256) roundTopRanking;
-    IERC20 public feeToken;
+    mapping(uint256 => mapping(address => uint256)) roundToInvestment;
+    mapping(uint256 => uint256) roundToTotalInvested;
+    mapping(uint256 => address[]) roundToInvestors;
+    IERC20 public investmentToken;
     
 
-    constructor(uint256 _fee,address _feeToken;address _guardian, address _sebu) public{
+    constructor(uint256 _fee,address _investmentToken,address _guardian, address _sebu) public{
         fee = _fee;
         guardian = _guardian;
         sebu = _sebu;
-        feeToken = IERC20(_feeToken);
+        investmentToken = IERC20(_invetstmentToken);
+        currentRound=1;
     }
 
+    modifier onlyGuardian {require(msg.sender == guardian);_;}
 
-    function invest() external{
+    modifier onlySebu {require(msg.sender == sebu);_;}
+
+    /*Functions*/
+    function invest(uint256 _amount) external{
+        require(transferFrom(msg.sender,address(this),_amount));
+        roundToTotalInvested[currentRound] = roundToTotalInvested[currentRound] + _amount;
+        roundToInvestment[currentRound][msg.sender] = _amount;
+        roundToInvestors[currentRound].push(msg.sender);
     }
 
     function withdrawFees()external onlyGuardian{
-        //lets guardian pull out fees
+        investmentToken.transfer(guardian);
     }
     function pitch(address _tokenToPitch) external returns(uint256 _slot){
         require(transferFrom(msg.sender,address(this),fee * queue.length));
@@ -52,7 +64,14 @@ contract SebuMaster {
         //closes the current round, buys the tokena and sends it to the portfolio
     }
 
+    
     function getCurrentQueue() external view{
 
     }
+
+    function getInvestment(uint256 _round, address _lp) external view returns(uint256 _amount){
+        return roundToInvestment[_round][_lp];
+    }
+
+    //to do, add all mapping getters
 }

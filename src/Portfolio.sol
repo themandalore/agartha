@@ -16,13 +16,8 @@ contract Portfolio is Token{
         //put new tokens into contract
     }
 
-    function issueLPShares(address[] _to, uint256[] _amounts) external onlySebu{
-        require(_to.length == _amounts.length);
-        for(i=0;i<_to.length;i++){
-            mint(_to[i],_amounts[i]);
-            totalMinted += _amounts[i];
-            require(totalMinted > shareAmount);
-        }
+    function getMyLPShares(address[] _to, uint256[] _amounts) external onlySebu{
+        
     }
 
     function withdraw(uint256 _amount, address[] _tokens) external{
