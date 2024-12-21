@@ -2,5 +2,5 @@
 pragma solidity 0.8.28;
 
 interface IERC20 {
-  function getInvestment(uint256 _round, address _lp) external view;
+  function depositToken(address _token, uint256 _amount) external;
 }

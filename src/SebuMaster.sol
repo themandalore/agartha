@@ -1,10 +1,7 @@
-//Master holds most logic
-//can pay fee to get in queue, takes ranking from AI, sends funds to guardian to buy tokens and send to portfolio
-
-
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 import "./interfaces/IERC20.sol";
+import "./interfaces/IPortfolio.sol";
 
 
 contract SebuMaster {
@@ -24,6 +21,7 @@ contract SebuMaster {
     mapping(uint256 => uint256) roundToTotalInvested;
     mapping(uint256 => address[]) roundToInvestors;
     IERC20 public investmentToken;
+    IPortfolio public portfolio;
     
 
     constructor(uint256 _fee,address _investmentToken,address _guardian, address _sebu) public{
@@ -38,6 +36,9 @@ contract SebuMaster {
 
     modifier onlySebu {require(msg.sender == sebu);_;}
 
+    function init(address _portfolio){
+        portfolio = IPortfolio(_portfolio);
+    }
     /*Functions*/
     function invest(uint256 _amount) external{
         require(transferFrom(msg.sender,address(this),_amount));
