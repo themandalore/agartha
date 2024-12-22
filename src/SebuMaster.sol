@@ -16,7 +16,7 @@ contract SebuMaster {
     mapping(address => uint256) slotInQueue;
     mapping(uint256 => address) slotToToken;
     mapping(uint256 => uint256) slotToRanking;
-    mapping(uint256 => uint256) roundTopRanking;
+    mapping(uint256 => uint256) roundTopRankingSlot;
     mapping(uint256 => mapping(address => uint256)) roundToInvestment;
     mapping(uint256 => uint256) roundToTotalInvested;
     mapping(uint256 => address[]) roundToInvestors;
@@ -32,7 +32,7 @@ contract SebuMaster {
         currentRound=1;
     }
 
-    modifier onlyGuardian {require(msg.sender == guardian);_;}
+    modifier onlyGuardian{require(msg.sender == guardian);_;}
 
     modifier onlySebu {require(msg.sender == sebu);_;}
 
@@ -50,6 +50,7 @@ contract SebuMaster {
     function withdrawFees()external onlyGuardian{
         investmentToken.transfer(guardian);
     }
+
     function pitch(address _tokenToPitch) external returns(uint256 _slot){
         require(transferFrom(msg.sender,address(this),fee * queue.length));
         queue.push(msg.sender);
@@ -57,8 +58,16 @@ contract SebuMaster {
         slotToToken[queue.length] = _tokenToPitch;
         emit(NewPitchQueued(msg.sender))
     }
-    function setRanking() external onlySebu{
+    function setRanking(uint256 _round, uint256 _slot, uint256 _ranking) external onlySebu{
+        slotToRanking[_slot] => _ranking;
+        if(_ranking > slotToRanking[roundTopRankingSlot[_round]]){
+            roundTopRankingSlot[_round] = _slot;
+        }
+    }
 
+    function invalidatePitch(uint256 _round, uint256 _slot, uint256 _newTopSlot) external onlyGuardian{
+        //clear ranking
+        //enter newTopSlot
     }
 
     function closeRound() external onlyGuardian{
