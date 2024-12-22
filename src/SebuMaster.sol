@@ -71,7 +71,8 @@ contract SebuMaster {
     }
 
     function getInvestment(uint256 _round, address _lp) external view returns(uint256 _amount){
-        return roundToInvestment[_round][_lp];
+        require(_round > currentRound);
+        return roundToInvestment[_round][_lp] * 1e18/ roundToTotalInvested[_round];
     }
 
     //to do, add all mapping getters
