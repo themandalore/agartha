@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.13;
 import "./interfaces/IERC20.sol";
 import "./interfaces/IPortfolio.sol";
 
-contract Funding is Token{
+
+contract Funding{
      IPortfolio public portfolio;
 
 
@@ -13,7 +14,7 @@ contract Funding is Token{
 
 
     function MockBuyTokenAndSendToPortfolio(address _token, uint256 _amount) external{
-        IERC20(_token).approve(portfolio, _amount);
+        IERC20(_token).approve(address(portfolio), _amount);
         portfolio.newPosition(_token,_amount);
     }   
 

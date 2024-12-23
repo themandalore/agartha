@@ -1,6 +1,5 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.28;
-
+pragma solidity ^0.8.13;
 /**
  @title Token
  @dev base ERC20 to act as token underlying CHD and pool tokens
