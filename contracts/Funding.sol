@@ -8,7 +8,7 @@ contract Funding{
      IPortfolio public portfolio;
 
 
-    constructor(address _portfolio){
+    function setPortfolio(address _portfolio) external{
         portfolio = IPortfolio(_portfolio);
     }
 
