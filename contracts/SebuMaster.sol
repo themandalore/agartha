@@ -9,7 +9,7 @@ contract SebuMaster {
     uint256 public currentSlot;
     uint256 public currentRound;
     address public guardian;
-    address public sebu;
+    address public shepard;
     address public fundingContract;
     address[] public queue;
     mapping(uint256 => mapping(address => uint256)) founderToSlot;
@@ -30,10 +30,10 @@ contract SebuMaster {
     event PitchInvalidated(uint256 _round, uint256 _slot, uint256 _newTopSlot);
     event RoundClosed(uint256 _currentRound,uint256 _sendAmt);
 
-    constructor(uint256 _fee,address _investmentToken,address _guardian, address _sebu, address _fundingContract){
+    constructor(uint256 _fee,address _investmentToken,address _guardian, address _shepard, address _fundingContract){
         fee = _fee;
         guardian = _guardian;
-        sebu = _sebu;
+        shepard = _shepard;
         fundingContract = _fundingContract;
         investmentToken = IERC20(_investmentToken);
         currentRound=1;
@@ -41,7 +41,7 @@ contract SebuMaster {
 
     modifier onlyGuardian{require(msg.sender == guardian);_;}
 
-    modifier onlySebu {require(msg.sender == sebu);_;}
+    modifier onlyShepard {require(msg.sender == shepard);_;}
 
     function init(address _portfolio) external onlyGuardian {
         portfolio = IPortfolio(_portfolio);
@@ -70,7 +70,7 @@ contract SebuMaster {
     }
 
 
-    function setRanking(uint256 _round, uint256 _slot, uint256 _ranking) external onlySebu{
+    function setRanking(uint256 _round, uint256 _slot, uint256 _ranking) external onlyShepard{
         require(_slot == currentSlot);
         slotToRanking[_slot] = _ranking;
         if(_ranking > slotToRanking[roundTopRankingSlot[_round]]){

@@ -1,15 +1,12 @@
 const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
-const web3 = require('web3');
 
 describe("token - function tests", function() {
-
     async function deploy(contractName, ...args) {
         const Factory = await ethers.getContractFactory(contractName)
         const instance = await Factory.deploy(...args)
         return instance.waitForDeployment()
       }
-
     let token,accounts
     beforeEach(async function () {
         accounts = await ethers.getSigners();
