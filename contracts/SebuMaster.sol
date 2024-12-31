@@ -58,13 +58,14 @@ contract SebuMaster {
     function pitch(address _tokenToPitch) external{
         //each person can only pitch once per round
         require(founderToSlot[currentRound][msg.sender] == 0);
-        require(investmentToken.transferFrom(msg.sender,address(this),fee * queue.length));
+        require(investmentToken.transferFrom(msg.sender,address(this),fee * (2 ** queue.length)));
         roundToFees[currentRound] = roundToFees[currentRound] + fee * queue.length;
         founderToSlot[currentRound][msg.sender] = queue.length;
         slotToToken[queue.length] = _tokenToPitch;
         queue.push(msg.sender);
         emit NewPitchQueued(msg.sender, _tokenToPitch);
-        if(currentSlot == queue.length){
+        if(currentSlot == queue.length - 1){
+            currentSlot++;
             emit NewPitchUp(msg.sender, _tokenToPitch);
         }
     }
@@ -76,7 +77,9 @@ contract SebuMaster {
         if(_ranking > slotToRanking[roundTopRankingSlot[_round]]){
             roundTopRankingSlot[_round] = _slot;
         }
-        currentSlot ++;
+        if(queue.length -1  > currentSlot){
+            currentSlot ++;
+        }
         emit RankingSet(_round, _slot, _ranking);
         emit NewPitchUp(msg.sender, slotToToken[currentSlot]);
     }

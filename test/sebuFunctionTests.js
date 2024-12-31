@@ -1,7 +1,9 @@
 const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("token - function tests", function() {
+
+let fee = ethers.formatUnits("5", 'wei'); //5USDC
+describe("sebuMaster - function tests", function() {
     async function deploy(contractName, ...args) {
         const Factory = await ethers.getContractFactory(contractName)
         const instance = await Factory.deploy(...args)
@@ -13,12 +15,19 @@ describe("token - function tests", function() {
         guardian = accounts[0]
         shepard = accounts[1]
         token = await deploy("MockERC20","mock token", "MT");
-        sebu = await deploy("SebuMaster",token.address,guardian.address,shepard.address,fundingContract.address);
+        fundingContract = await deploy("Funding")
+        sebu = await deploy("SebuMaster",fee,token.target,guardian.address,shepard.address,fundingContract.target);
+        portfolio = await deploy("Portfolio","portfolioPoolToken","ppT",sebu.target);
+        await fundingContract.setPortfolio(portfolio.target)
+        await sebu.init(portfolio.target);
     });
     it("constructor()", async function() {
-        console.log("Token.sol")
-            assert(await token.name() == "mock token")
-            assert(await token.symbol() == "MT")
+            assert(await sebu.fee() == fee)
+            assert(await sebu.guardian() == guardian.address, "guardian should be correct")
+            assert(await sebu.shepard() == shepard.address)
+            assert(await sebu.fundingContract() == fundingContract.target)
+            assert(await sebu.investmentToken() == token.target)
+            assert(await sebu.currentRound() == 1)
     });
     it("init()", async function() {
 
@@ -39,21 +48,17 @@ describe("token - function tests", function() {
     });
 
     it("invalidatePitch()", async function() {
-        await token.connect(accounts[2]).approve(accounts[3].address,ethers.formatUnits("200", 'wei'))
         assert(await token.allowance(accounts[2].address,accounts[3].address) == ethers.formatUnits("200", 'wei'))
     });
 
     it("closeRound()", async function() {
-        await token.connect(accounts[2]).approve(accounts[3].address,ethers.formatUnits("200", 'wei'))
         assert(await token.allowance(accounts[2].address,accounts[3].address) == ethers.formatUnits("200", 'wei'))
     });
 
     it("getQueueLenght()", async function() {
-        await token.connect(accounts[2]).approve(accounts[3].address,ethers.formatUnits("200", 'wei'))
         assert(await token.allowance(accounts[2].address,accounts[3].address) == ethers.formatUnits("200", 'wei'))
     });
     it("getInvestment()", async function() {
-        await token.connect(accounts[2]).approve(accounts[3].address,ethers.formatUnits("200", 'wei'))
         assert(await token.allowance(accounts[2].address,accounts[3].address) == ethers.formatUnits("200", 'wei'))
     });
 });

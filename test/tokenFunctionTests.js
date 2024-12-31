@@ -13,7 +13,6 @@ describe("token - function tests", function() {
         token = await deploy("MockERC20","mock token", "MT");
     });
     it("constructor()", async function() {
-        console.log("Token.sol")
             assert(await token.name() == "mock token")
             assert(await token.symbol() == "MT")
     });
