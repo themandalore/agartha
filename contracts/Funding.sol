@@ -3,7 +3,10 @@ pragma solidity ^0.8.13;
 import "./interfaces/IERC20.sol";
 import "./interfaces/IPortfolio.sol";
 
-
+/**
+ @title Funding
+ @dev Mock funding contract for testing system
+*/
 contract Funding{
      IPortfolio public portfolio;
 

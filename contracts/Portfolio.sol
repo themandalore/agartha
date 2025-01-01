@@ -4,6 +4,10 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ISebu.sol";
 import "./Token.sol";
 
+/**
+ @title Portfolio
+ @dev Main Portfolio contract to hold investments
+*/
 contract Portfolio is Token{
      address[] public listOfTokens;
      uint256 totalLPshares;
@@ -35,7 +39,7 @@ contract Portfolio is Token{
     function mintLPShares(uint256 _round, address[] memory _to) external{
         uint256 _amt;
         for(uint256 _i=0;_i<_to.length;_i++){
-            _amt = sebu.getInvestment(_round, _to[_i]) * mintAmount / 1e18;
+            _amt = sebu.getInvestmentShare(_round, _to[_i]) * mintAmount / 1e18;
             _mint(_to[_i],_amt);
         }
         emit MintLPShares(_round, _to);

@@ -3,16 +3,27 @@ pragma solidity ^0.8.13;
 import "./interfaces/IERC20.sol";
 import "./interfaces/IPortfolio.sol";
 
-
+/**
+ @title SebuMaster
+ @dev Main contract to handle investments and pitches
+*/
 contract SebuMaster {
-    uint256 public fee; //fee to pitch
-    uint256 public currentSlot;
-    uint256 public currentRound;
+
+    /*to do:
+        make structs for round / slots
+        auction?
+        add getters
+        talk to front end about events needed
+        write funding contract
+    */
+    address public fundingContract;
     address public guardian;
     address public shepard;
-    address public fundingContract;
-    address[] public queue;
-    mapping(uint256 => mapping(address => uint256)) founderToSlot;
+    address[] public queue; //array of addresses in line to pitch
+    uint256 public fee; //fee to pitch
+    uint256 public currentRound;
+    uint256 public currentSlot;
+    mapping(uint256 => mapping(address => uint256)) founderToSlotbyRound;
     mapping(uint256 => address) slotToToken;
     mapping(uint256 => uint256) slotToRanking;
     mapping(uint256 => uint256) roundTopRankingSlot;
@@ -50,17 +61,19 @@ contract SebuMaster {
     function invest(uint256 _amount) external{
         require(investmentToken.transferFrom(msg.sender,address(this),_amount));
         roundToTotalInvested[currentRound] = roundToTotalInvested[currentRound] + _amount;
-        roundToInvestment[currentRound][msg.sender] = _amount;
-        roundToInvestors[currentRound].push(msg.sender);
+        if(roundToInvestment[currentRound][msg.sender] == 0){
+            roundToInvestors[currentRound].push(msg.sender);
+        }
+        roundToInvestment[currentRound][msg.sender] = roundToInvestment[currentRound][msg.sender] + _amount;
         emit Investment(msg.sender, _amount);
     }
 
     function pitch(address _tokenToPitch) external{
         //each person can only pitch once per round
-        require(founderToSlot[currentRound][msg.sender] == 0);
+        require(founderToSlotbyRound[currentRound][msg.sender] == 0);
         require(investmentToken.transferFrom(msg.sender,address(this),fee * (2 ** queue.length)));
         roundToFees[currentRound] = roundToFees[currentRound] + fee * queue.length;
-        founderToSlot[currentRound][msg.sender] = queue.length;
+        founderToSlotbyRound[currentRound][msg.sender] = queue.length;
         slotToToken[queue.length] = _tokenToPitch;
         queue.push(msg.sender);
         emit NewPitchQueued(msg.sender, _tokenToPitch);
@@ -107,10 +120,20 @@ contract SebuMaster {
         return queue.length - currentSlot;
     }
 
-    function getInvestment(uint256 _round, address _lp) external view returns(uint256 _amount){
+    function getInvestmentShare(uint256 _round, address _lp) external view returns(uint256 _amount){
         require(_round > currentRound);
         return roundToInvestment[_round][_lp] * 1e18/ roundToTotalInvested[_round];
     }
 
-    //to do, add all mapping getters
+    function getRoundToInvestment(uint256 _round, address _lp) external view returns(uint256 _amount){
+        return roundToInvestment[_round][_lp];
+    }
+
+    function getRoundToTotalInvested(uint256 _round) external view returns(uint256 _amount){
+        return roundToTotalInvested[_round];
+    }
+    
+    function getRoundInvestors(uint256 _round) external view returns(address[] memory){
+        return roundToInvestors[_round];
+    }
 }
