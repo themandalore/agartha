@@ -12,8 +12,7 @@ contract SebuMaster {
     /*to do:
         make structs for round / slots
         auction?
-        add getters
-        talk to front end about events needed
+        talk to front end about events/getters needed
         write funding contract
     */
     address public fundingContract;
@@ -37,10 +36,15 @@ contract SebuMaster {
     event Investment(address _investor, uint256 _amt);
     event NewPitchQueued(address _founder,address _tokenToPitch);
     event NewPitchUp(address _founder,address _tokenToPitch);
+    event NewTopSlot(address _token, uint256 _slot, uint256 _ranking);
+    event PitchInvalidated(uint256 _round, uint256 _slot);
     event RankingSet(uint256 _round, uint256 _slot, uint256 _ranking);
-    event PitchInvalidated(uint256 _round, uint256 _slot, uint256 _newTopSlot);
     event RoundClosed(uint256 _currentRound,uint256 _sendAmt);
 
+    modifier onlyGuardian{require(msg.sender == guardian);_;}
+    modifier onlyShepard {require(msg.sender == shepard);_;}
+
+    /*Functions*/
     constructor(uint256 _fee,address _investmentToken,address _guardian, address _shepard, address _fundingContract){
         fee = _fee;
         guardian = _guardian;
@@ -48,16 +52,14 @@ contract SebuMaster {
         fundingContract = _fundingContract;
         investmentToken = IERC20(_investmentToken);
         currentRound=1;
+        currentSlot=1;
+        queue.push(msg.sender);//adding to init
     }
-
-    modifier onlyGuardian{require(msg.sender == guardian);_;}
-
-    modifier onlyShepard {require(msg.sender == shepard);_;}
 
     function init(address _portfolio) external onlyGuardian {
         portfolio = IPortfolio(_portfolio);
     }
-    /*Functions*/
+
     function invest(uint256 _amount) external{
         require(investmentToken.transferFrom(msg.sender,address(this),_amount));
         roundToTotalInvested[currentRound] = roundToTotalInvested[currentRound] + _amount;
@@ -71,28 +73,27 @@ contract SebuMaster {
     function pitch(address _tokenToPitch) external{
         //each person can only pitch once per round
         require(founderToSlotbyRound[currentRound][msg.sender] == 0);
-        require(investmentToken.transferFrom(msg.sender,address(this),fee * (2 ** queue.length)));
-        roundToFees[currentRound] = roundToFees[currentRound] + fee * queue.length;
+        require(investmentToken.transferFrom(msg.sender,address(this),fee * (2 ** getQueueLength())));
+        roundToFees[currentRound] = roundToFees[currentRound] + fee * (2 ** getQueueLength());
         founderToSlotbyRound[currentRound][msg.sender] = queue.length;
         slotToToken[queue.length] = _tokenToPitch;
         queue.push(msg.sender);
-        emit NewPitchQueued(msg.sender, _tokenToPitch);
-        if(currentSlot == queue.length - 1){
-            currentSlot++;
+        if(slotToToken[currentSlot] == _tokenToPitch){//fix, what if two people pitch same token
             emit NewPitchUp(msg.sender, _tokenToPitch);
         }
+        else{
+            emit NewPitchQueued(msg.sender, _tokenToPitch);
+        }
     }
-
 
     function setRanking(uint256 _round, uint256 _slot, uint256 _ranking) external onlyShepard{
         require(_slot == currentSlot);
         slotToRanking[_slot] = _ranking;
         if(_ranking > slotToRanking[roundTopRankingSlot[_round]]){
             roundTopRankingSlot[_round] = _slot;
+            emit NewTopSlot(slotToToken[_slot], _slot, _ranking);
         }
-        if(queue.length -1  > currentSlot){
-            currentSlot ++;
-        }
+        currentSlot ++;
         emit RankingSet(_round, _slot, _ranking);
         emit NewPitchUp(msg.sender, slotToToken[currentSlot]);
     }
@@ -101,8 +102,9 @@ contract SebuMaster {
         slotToRanking[_slot] = 0;
         if(roundTopRankingSlot[_round] == _slot){
             roundTopRankingSlot[_round] = _newTopSlot;
+            emit NewTopSlot(slotToToken[_newTopSlot], _newTopSlot, slotToRanking[_newTopSlot]);
         }
-        emit PitchInvalidated( _round,_slot,_newTopSlot);
+        emit PitchInvalidated( _round,_slot);
     }
 
     function closeRound() external onlyGuardian{
@@ -115,9 +117,14 @@ contract SebuMaster {
         currentRound += 1;
     }
 
-    
-    function getQueueLength() external view returns(uint256){
+    //Getters
+    function getQueueLength() public view returns(uint256){
         return queue.length - currentSlot;
+    }
+
+
+    function getFounderToSlotByRound(uint256 _round, address _founder) external view returns(uint256 _slot){
+        return founderToSlotbyRound[_round][_founder];
     }
 
     function getInvestmentShare(uint256 _round, address _lp) external view returns(uint256 _amount){
@@ -125,15 +132,37 @@ contract SebuMaster {
         return roundToInvestment[_round][_lp] * 1e18/ roundToTotalInvested[_round];
     }
 
+    function getQueue() external view returns(address[] memory){
+        return queue;
+    }
+
+    function getRoundInvestors(uint256 _round) external view returns(address[] memory){
+        return roundToInvestors[_round];
+    }
+
+    function getRoundToFees(uint256 _round) external view returns(uint256 _amount){
+        return roundToFees[_round];
+    }
+
     function getRoundToInvestment(uint256 _round, address _lp) external view returns(uint256 _amount){
         return roundToInvestment[_round][_lp];
+    }
+
+    function getRoundTopRankingSlot(uint256 _round) external view returns(uint256 _slot){
+        return roundTopRankingSlot[_round];
     }
 
     function getRoundToTotalInvested(uint256 _round) external view returns(uint256 _amount){
         return roundToTotalInvested[_round];
     }
     
-    function getRoundInvestors(uint256 _round) external view returns(address[] memory){
-        return roundToInvestors[_round];
+
+
+    function getSlotToToken(uint256 _slot) external view returns(address _token){
+        return slotToToken[_slot];
+    }
+
+    function getSlotToRanking(uint256 _slot) external view returns(uint256 _ranking){
+        return slotToRanking[_slot];
     }
 }

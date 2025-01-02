@@ -52,12 +52,26 @@ describe("sebuMaster - function tests", function() {
         assert(invAr[0] == accounts[2].address)
     });
     it("pitch()", async function() {
-
-        assert(await token.allowance(accounts[2].address,accounts[3].address) == ethers.formatUnits("200", 'wei'))
+        await expect(sebu.connect(accounts[2]).pitch(samplePitch.target)).to.be.reverted;//must approve
+        await token.connect(accounts[2]).approve(sebu.target,ethers.formatUnits("5", 'wei'))
+        await sebu.connect(accounts[2]).pitch(samplePitch.target);
+        await expect(sebu.connect(accounts[2]).pitch(samplePitch.target)).to.be.reverted;//cannot pitch twice
+        assert(await token.balanceOf(accounts[2].address) == ethers.formatUnits("95", 'wei')) //assert fee correct (correct amount taken out)
+        assert(await sebu.getRoundToFees(1) == ethers.formatUnits("5", 'wei'))
+        assert(await sebu.getFounderToSlotByRound(1,accounts[2].address) == 1, "slot should be correct")
+        let _q = await sebu.getQueue()
+        assert(_q[1] == accounts[2].address, "slot in q should be correct")
+        assert(await sebu.currentSlot() == 1)
     });
-
     it("setRanking()", async function() {
-        assert(await token.allowance(accounts[2].address,accounts[3].address) == ethers.formatUnits("200", 'wei'))
+        await token.connect(accounts[2]).approve(sebu.target,ethers.formatUnits("5", 'wei'))
+        await sebu.connect(accounts[2]).pitch(samplePitch.target);
+        await expect(sebu.connect(accounts[2]).setRanking(1,1,100)).to.be.reverted;//must be shepard
+        await expect(sebu.connect(shepard).setRanking(1,3,50)).to.be.reverted;//must be currentSlot
+        await sebu.connect(shepard).setRanking(1,1,50)
+        assert(await sebu.getSlotToRanking(1) == 50);
+        assert(await sebu.getRoundTopRankingSlot(1) == 1);
+        assert(await sebu.currentSlot() == 2)
     });
 
     it("invalidatePitch()", async function() {
