@@ -53,7 +53,7 @@ contract SebuMaster {
         investmentToken = IERC20(_investmentToken);
         currentRound=1;
         currentSlot=1;
-        queue.push(msg.sender);//adding to init
+        queue.push(guardian);//adding to init
     }
 
     function init(address _portfolio) external onlyGuardian {
@@ -73,8 +73,9 @@ contract SebuMaster {
     function pitch(address _tokenToPitch) external{
         //each person can only pitch once per round
         require(founderToSlotbyRound[currentRound][msg.sender] == 0);
-        require(investmentToken.transferFrom(msg.sender,address(this),fee * (2 ** getQueueLength())));
-        roundToFees[currentRound] = roundToFees[currentRound] + fee * (2 ** getQueueLength());
+        uint256 _amt = fee * (2 ** getQueueLength());
+        require(investmentToken.transferFrom(msg.sender,address(this),_amt));
+        roundToFees[currentRound] = roundToFees[currentRound] + _amt;
         founderToSlotbyRound[currentRound][msg.sender] = queue.length;
         slotToToken[queue.length] = _tokenToPitch;
         queue.push(msg.sender);
@@ -107,12 +108,13 @@ contract SebuMaster {
         emit PitchInvalidated( _round,_slot);
     }
 
+//should we automate this and just make it time based to be run by anyone?
     function closeRound() external onlyGuardian{
         //closes the current round, buys the tokens and sends it to the portfolio
-        uint256 teamFee = roundToFees[currentRound]/2;
-        investmentToken.transfer(guardian, teamFee);
+        uint256 _teamFee = roundToFees[currentRound]/2;
+        require(investmentToken.transfer(guardian, _teamFee));
         uint256 _sendAmt = investmentToken.balanceOf(address(this));
-        investmentToken.transfer(fundingContract,_sendAmt); //send the rest to the fundingContract
+        require(investmentToken.transfer(fundingContract,_sendAmt)); //send the rest to the fundingContract
         emit RoundClosed(currentRound,_sendAmt);
         currentRound += 1;
     }
@@ -122,13 +124,12 @@ contract SebuMaster {
         return queue.length - currentSlot;
     }
 
-
     function getFounderToSlotByRound(uint256 _round, address _founder) external view returns(uint256 _slot){
         return founderToSlotbyRound[_round][_founder];
     }
 
     function getInvestmentShare(uint256 _round, address _lp) external view returns(uint256 _amount){
-        require(_round > currentRound);
+        require(_round < currentRound);
         return roundToInvestment[_round][_lp] * 1e18/ roundToTotalInvested[_round];
     }
 
@@ -156,8 +157,6 @@ contract SebuMaster {
         return roundToTotalInvested[_round];
     }
     
-
-
     function getSlotToToken(uint256 _slot) external view returns(address _token){
         return slotToToken[_slot];
     }
